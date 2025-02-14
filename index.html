@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InnovaTrack: Smart RFID Customer Management System</title>
+    <meta name="description" content="Comprehensive RFID-based solution for businesses to track customers, manage loyalty programs, and deliver personalized experiences with real-time analytics.">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/vue@3.5.13/dist/vue.global.js"></script>
+    <link rel="icon" type="image/png" href="https://api.dicebear.com/7.x/identicon/svg?seed=InnovaTrack">
+</head>
+<body class="bg-gray-100">
+    <div id="app" v-cloak>
+        <nav class="bg-blue-600 text-white shadow-lg">
+            <div class="container mx-auto px-4 py-3">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-xl font-bold">InnovaTrack</h1>
+                    <div class="flex items-center space-x-4">
+                        <button @click="toggleMenu" class="md:hidden">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-16 6h16"></path>
+                            </svg>
+                        </button>
+                        <div class="hidden md:flex space-x-4">
+                            <a href="#" class="hover:text-blue-200">Dashboard</a>
+                            <a href="#" class="hover:text-blue-200">Customers</a>
+                            <a href="#" class="hover:text-blue-200">Analytics</a>
+                            <a href="#" class="hover:text-blue-200">Settings</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Mobile Menu -->
+        <div v-if="showMenu" class="md:hidden bg-blue-500 text-white">
+            <div class="container mx-auto px-4 py-2">
+                <a href="#" class="block py-2">Dashboard</a>
+                <a href="#" class="block py-2">Customers</a>
+                <a href="#" class="block py-2">Analytics</a>
+                <a href="#" class="block py-2">Settings</a>
+            </div>
+        </div>
+
+        <main class="container mx-auto px-4 py-8">
+            <!-- Dashboard Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-gray-500 text-sm">Total Customers</h3>
+                    <p class="text-2xl font-bold">{{ totalCustomers }}</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-gray-500 text-sm">Today's Check-ins</h3>
+                    <p class="text-2xl font-bold">{{ todayCheckins }}</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-gray-500 text-sm">Active Discounts</h3>
+                    <p class="text-2xl font-bold">{{ activeDiscounts }}</p>
+                </div>
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-gray-500 text-sm">VIP Customers</h3>
+                    <p class="text-2xl font-bold">{{ vipCustomers }}</p>
+                </div>
+            </div>
+
+            <!-- Recent Activity & Customer Registration -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Recent Activity -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-bold mb-4">Recent Activity</h2>
+                    <div v-if="loading" class="flex justify-center py-4">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    </div>
+                    <div v-else class="space-y-4">
+                        <div v-for="activity in recentActivity" :key="activity.id" class="border-b pb-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-semibold">{{ activity.customerName }}</p>
+                                    <p class="text-sm text-gray-500">{{ activity.action }}</p>
+                                </div>
+                                <span class="text-sm text-gray-500">{{ activity.time }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customer Registration -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-bold mb-4">Quick Registration</h2>
+                    <form @submit.prevent="registerCustomer" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Customer Name</label>
+                            <input v-model="newCustomer.name" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">RFID Tag ID</label>
+                            <input v-model="newCustomer.rfidTag" type="text" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Email</label>
+                            <input v-model="newCustomer.email" type="email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                            Register Customer
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    showMenu: false,
+                    loading: false,
+                    totalCustomers: 1234,
+                    todayCheckins: 45,
+                    activeDiscounts: 12,
+                    vipCustomers: 78,
+                    recentActivity: [
+                        { id: 1, customerName: 'John Doe', action: 'Checked in', time: '5 min ago' },
+                        { id: 2, customerName: 'Jane Smith', action: 'Redeemed discount', time: '15 min ago' },
+                        { id: 3, customerName: 'Mike Johnson', action: 'New registration', time: '1 hour ago' }
+                    ],
+                    newCustomer: {
+                        name: '',
+                        rfidTag: '',
+                        email: ''
+                    }
+                }
+            },
+            methods: {
+                toggleMenu() {
+                    this.showMenu = !this.showMenu;
+                },
+                async registerCustomer() {
+                    this.loading = true;
+                    try {
+                        // Simulate API call
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        alert('Customer registered successfully!');
+                        this.newCustomer = { name: '', rfidTag: '', email: '' };
+                    } catch (error) {
+                        alert('Error registering customer');
+                    } finally {
+                        this.loading = false;
+                    }
+                }
+            }
+        }).mount('#app');
+    </script>
+
+    <style>
+        [v-cloak] {
+            display: none;
+        }
+        input {
+            border: 1px solid #e2e8f0;
+            padding: 0.5rem;
+        }
+    </style>
+</body>
+</html>
